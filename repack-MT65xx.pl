@@ -106,6 +106,22 @@ sub repack_logo {
 	my $signature = $_[0];
 	$ARGV[0] =~ s/-//;
 
+	my $ffmpegcmd = "ffmpeg";
+	my $ffmpegerr = 1;
+	if (-e "ffmpeg.exe") {
+		$ffmpegerr = system ("$dir/ffmpeg.exe -version");
+		if ( $ffmpegerr == 0 ) {
+		$ffmpegcmd = "$dir/ffmpeg.exe";
+		};
+	};
+	if (-e "ffmpeg") {
+		$ffmpegerr = system ("$dir/ffmpeg -version");
+		if ( $ffmpegerr == 0 ) {
+			$ffmpegcmd = "$dir/ffmpeg";
+		};
+	};
+	print "using ffmpeg command: $ffmpegcmd\n";	
+
 	chdir $logodir or die colored ("Error: directory '$logodir' not found", 'red') . "\n";
 
 	my (@raw_addr, @zlib_raw) = ();
@@ -114,11 +130,16 @@ sub repack_logo {
 	print "Converting $ARGV[0] png images...\n";
 	for my $inputfile ( glob "./*.png" ) {
 		my $inputfile = (fileparse($inputfile, qr/\.[^.]*/))[0];
-		system ("ffmpeg -f image2 -vcodec png -i $inputfile.png -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -y $inputfile.rgb565;");
+		$ffmpegerr = system ("$ffmpegcmd -v 1 -f image2 -vcodec png -i $inputfile.png -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -y $inputfile.rgb565;");
+		if ( $ffmpegerr == 0 ) {
+			print "Success Converting $inputfile.png to $inputfile.rgb565\n";
+		} else {
+			print "Fail to Convert $inputfile.png to $inputfile.rgb565 \nMay be no ffmpeg installed?\n";
+		}
 		$i++;
 	}
 
-	my $i = 0;
+	$i = 0;
 	print "Repacking $ARGV[0] image...\n";
 	for my $inputfile ( glob "./*.rgb565" ) {
 		open (INPUTFILE, "$inputfile") or die colored ("Error: could not open raw image '$inputfile'", 'red') . "\n";

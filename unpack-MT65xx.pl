@@ -20,11 +20,14 @@
 
 use strict;
 use warnings;
+use Cwd;
 use bytes;
 use File::Path;
 use Compress::Zlib;
 use Term::ANSIColor;
 use Scalar::Util qw(looks_like_number);
+
+my $dir = getcwd;
 
 my $version = "MTK-Tools by Bruno Martins\nMT65xx unpack script (last update: 20-01-2013)\n";
 my $usage = "unpack-MT65xx.pl <infile> [COMMAND ...]\n  Unpacks boot, recovery or logo image\n\nOptional COMMANDs are:\n\n  -kernel_only\n    Extract kernel only from boot or recovery image\n\n  -ramdisk_only\n    Extract ramdisk only from boot or recovery image\n\n  -force_logo_res <width> <height>\n    Forces logo image file to be unpacked by specifying image resolution,\n    which must be entered in pixels\n     (only useful when no zlib compressed images are found)\n\n";
@@ -191,7 +194,21 @@ sub unpack_logo {
 		rmtree "$ARGV[0]-unpacked";
 		print "\nRemoved old unpacked logo directory '$ARGV[0]-unpacked'\n";
 	}
-
+	my $ffmpegcmd = "ffmpeg";
+	my $ffmpegerr = 1;
+	if (-e "ffmpeg.exe") {
+		$ffmpegerr = system ("$dir/ffmpeg.exe -version");
+		if ( $ffmpegerr == 0 ) {
+		$ffmpegcmd = "$dir/ffmpeg.exe";
+		} 
+	}
+	if (-e "ffmpeg") {
+		$ffmpegerr = system ("$dir/ffmpeg -version");
+		if ( $ffmpegerr == 0 ) {
+			$ffmpegcmd = "$dir/ffmpeg";
+		}
+	}
+	print "using ffmpeg command: $ffmpegcmd\n";	
 	mkdir "$ARGV[0]-unpacked" or die;
 	chdir "$ARGV[0]-unpacked" or die;
 	print "Extracting raw images to directory '$ARGV[0]-unpacked'\n";
@@ -250,7 +267,17 @@ sub unpack_logo {
 			if ( $j <= $#resolution ) {
 				print "  Image resolution (width x height): $resolution[$j][0] x $resolution[$j][1] $resolution[$j][2]\n";
 				print "  Convert raw image to png \n";
-				system ("ffmpeg -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -s $resolution[$j][0]x$resolution[$j][1] -i $filename.rgb565 -f image2 -vcodec png $filename.png;");
+				$ffmpegerr = system ("$ffmpegcmd -v 1 -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -s $resolution[$j][0]x$resolution[$j][1] -i $filename.rgb565 -f image2 -vcodec png $filename.png;");
+				if ( $ffmpegerr == 0 ) {
+					print "Success Converting $filename.rgb565 to $filename.png\n";
+					if ( $^O eq "cygwin" ) {
+						system ("del $filename.rgb565");
+					} else {
+						system ("rm -f $filename.rgb565");
+					}
+				} else {
+					print "Fail to Convert $filename.rgb565 to $filename.png \nMay be no ffmpeg installed?\n";
+				}
 			} else {
 				print "  Image resolution: unknown\n";
 			}
