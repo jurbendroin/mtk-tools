@@ -19,6 +19,7 @@ use Cwd;
 use Compress::Zlib;
 use Term::ANSIColor;
 use FindBin qw($Bin);
+use File::Basename;
 
 my $dir = getcwd;
 
@@ -108,6 +109,16 @@ sub repack_logo {
 	chdir $logodir or die colored ("Error: directory '$logodir' not found", 'red') . "\n";
 
 	my (@raw_addr, @zlib_raw) = ();
+
+	my $i = 0;
+	print "Converting $ARGV[0] png images...\n";
+	for my $inputfile ( glob "./*.png" ) {
+		print "$inputfile\n";
+		my $inputfile = (fileparse($inputfile, qr/\.[^.]*/))[0];
+		print "$inputfile\n";
+		system ("ffmpeg -f image2 -vcodec png -i $inputfile.png -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -y $inputfile.rgb565;");
+		$i++;
+	}
 
 	my $i = 0;
 	print "Repacking $ARGV[0] image...\n";

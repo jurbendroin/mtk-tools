@@ -249,6 +249,8 @@ sub unpack_logo {
 			}
 			if ( $j <= $#resolution ) {
 				print "  Image resolution (width x height): $resolution[$j][0] x $resolution[$j][1] $resolution[$j][2]\n";
+				print "  Convert raw image to png \n";
+				system ("ffmpeg -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -s $resolution[$j][0]x$resolution[$j][1] -i $filename.rgb565 -f image2 -vcodec png $filename.png;");
 			} else {
 				print "  Image resolution: unknown\n";
 			}
