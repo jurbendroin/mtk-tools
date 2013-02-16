@@ -113,9 +113,7 @@ sub repack_logo {
 	my $i = 0;
 	print "Converting $ARGV[0] png images...\n";
 	for my $inputfile ( glob "./*.png" ) {
-		print "$inputfile\n";
 		my $inputfile = (fileparse($inputfile, qr/\.[^.]*/))[0];
-		print "$inputfile\n";
 		system ("ffmpeg -f image2 -vcodec png -i $inputfile.png -vcodec rawvideo -f rawvideo -pix_fmt rgb565 -y $inputfile.rgb565;");
 		$i++;
 	}
